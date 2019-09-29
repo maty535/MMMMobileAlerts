@@ -15,15 +15,18 @@ Sensor.prototype.CreateSensorObject = function(buffer) {
   }
   checksum = 0x00;
   for(i=0; i<63; ++i)
-    checksum += buffer.readUInt8(i)
-  if((checksum & 0x7f) != buffer.readUInt8(63)) {
-    console.error('### Checksum error', buffer);
+    checksum += buffer.readUInt8(i);
+    
+  gw_checksum = buffer.readUInt8(63);
+  if((checksum & 0x7f) != gw_checksum ) {
+    console.error('### Checksum error: %d != %d , buff: %s' ,(checksum & 0x7f), gw_checksum,  buffer);
     return undefined;
   }
 
   try {
     // a copy of the first byte as the sensor ID
     const className = 'Sensor_ID'+buffer.toString('hex', 6, 7);
+    console.log("### Sensor: " + className);
     sensor = eval('new '+className+'()');
   }
   catch(err) {
@@ -80,9 +83,9 @@ SensorBase.prototype.setup = function(buffer) {
   // This also changes the offset where the data starts
   this.getTXAndBufferOffset();
 
-  this.json = this.generateJSON(buffer.slice(this.bufferOffset));
+  this.json    = this.generateJSON(buffer.slice(this.bufferOffset));
   this.json.id = this.ID
-  this.json.t = this.unixTime
+  this.json.t  = this.unixTime
   return this;
 }
 
@@ -207,8 +210,8 @@ Sensor_ID02.prototype.transmitInterval = function() {
   return 7;
 }
 Sensor_ID02.prototype.generateJSON = function(buffer) {
-  return { 'temperature': [ this.convertTemperature(buffer.readUInt16BE(0))
-                            , this.convertTemperature(buffer.readUInt16BE(2))]
+  return { 'temperature': [  this.convertTemperature(buffer.readUInt16BE(0)), 
+	   				         this.convertTemperature(buffer.readUInt16BE(2))]
                             };
 }
 Sensor_ID02.prototype.debugString = function() {
@@ -229,7 +232,7 @@ Sensor_ID03.prototype.generateJSON = function(buffer) {
   return { 'temperature': [
                           this.convertTemperature(buffer.readUInt16BE(0))
                         , this.convertTemperature(buffer.readUInt16BE(4))],
-       'humidity': [   this.convertHumidity(buffer.readUInt16BE(2))
+           'humidity': [   this.convertHumidity(buffer.readUInt16BE(2))
                      , this.convertHumidity(buffer.readUInt16BE(6))] };
 }
 Sensor_ID03.prototype.debugString = function() {
@@ -358,16 +361,16 @@ Sensor_ID08.prototype.transmitInterval = function() {
 }
 Sensor_ID08.prototype.generateJSON = function(buffer) {
   return { 'temperature': [this.convertTemperature(buffer.readUInt16BE(0))],
-       'eventCounter': buffer.readUInt16BE(2),
-       'eventTimes': [ this.convertEventTime(buffer.readUInt16BE(4), 14)
-                     , this.convertEventTime(buffer.readUInt16BE(6), 14)
-                     , this.convertEventTime(buffer.readUInt16BE(8), 14)
-                     , this.convertEventTime(buffer.readUInt16BE(10), 14)
-                     , this.convertEventTime(buffer.readUInt16BE(12), 14)
-                     , this.convertEventTime(buffer.readUInt16BE(14), 14)
-                     , this.convertEventTime(buffer.readUInt16BE(16), 14)
-                     , this.convertEventTime(buffer.readUInt16BE(18), 14)
-                     , this.convertEventTime(buffer.readUInt16BE(20), 14) ] };
+           'eventCounter': buffer.readUInt16BE(2),
+           'eventTimes': [ this.convertEventTime(buffer.readUInt16BE(4), 14)
+                         , this.convertEventTime(buffer.readUInt16BE(6), 14)
+                         , this.convertEventTime(buffer.readUInt16BE(8), 14)
+                         , this.convertEventTime(buffer.readUInt16BE(10), 14)
+                         , this.convertEventTime(buffer.readUInt16BE(12), 14)
+                         , this.convertEventTime(buffer.readUInt16BE(14), 14)
+                         , this.convertEventTime(buffer.readUInt16BE(16), 14)
+                         , this.convertEventTime(buffer.readUInt16BE(18), 14)
+                         , this.convertEventTime(buffer.readUInt16BE(20), 14) ] };
 }
 Sensor_ID08.prototype.debugString = function() {
   return this.temperaturAsString(this.json.temperature[0])
@@ -503,6 +506,33 @@ Sensor_ID10.prototype.debugString = function() {
     statusStr = 'CLOSED'
   }
   return statusStr
+}
+
+//Wheather station
+function Sensor_ID11() {}
+util.inherits(Sensor_ID11, SensorBase);
+Sensor_ID11.prototype.bufferSize = function() {
+	return 32;
+}
+Sensor_ID11.prototype.transmitInterval = function() {
+  return 7 ;
+}
+Sensor_ID11.prototype.generateJSON = function(buffer) {
+  
+	return {  'temperature1': [this.convertTemperature(buffer.readUInt16BE(0)),this.convertTemperature(buffer.readUInt16BE(16))],
+			  'humidity1'   : [this.convertHumidity(buffer.readUInt16BE(2))   ,this.convertHumidity(buffer.readUInt16BE(18))],
+			  'temperature2' : [this.convertTemperature(buffer.readUInt16BE(4)),this.convertTemperature(buffer.readUInt16BE(20))],
+			  'humidity2'    : [this.convertHumidity(buffer.readUInt16BE(6))   ,this.convertHumidity(buffer.readUInt16BE(22))],
+			 'temperature3'  : [this.convertTemperature(buffer.readUInt16BE(8)),this.convertTemperature(buffer.readUInt16BE(24))],
+			 'humidity3'     : [this.convertHumidity(buffer.readUInt16BE(10))   ,this.convertHumidity(buffer.readUInt16BE(26))],
+			 'temperatureIN'  : [this.convertTemperature(buffer.readUInt16BE(12)),this.convertTemperature(buffer.readUInt16BE(28))],
+			 'humidityIN'     : [this.convertHumidity(buffer.readUInt16BE(14))   ,this.convertHumidity(buffer.readUInt16BE(30))]
+			};
+}
+
+Sensor_ID11.prototype.debugString = function() {
+	return this.temperaturAsString(this.json.temperatureIN[0])
+                        + ' ' + this.humidityAsString(this.json.humidityIN[0])
 }
 
 // ID12: Humidity Guard (MA10230)
