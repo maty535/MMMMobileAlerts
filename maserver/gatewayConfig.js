@@ -209,7 +209,7 @@ module.exports = function(localIPv4Adress,proxyServerPort,gatewayID,debugLog) {
     // after the bind delay the request by 250ms
     setTimeout(function() {
       // find the Mobile Alerts Gateway
-      var findGatewayCommand = new Buffer(FIND_GATEWAYS_SIZE);
+      var findGatewayCommand = Buffer.alloc(FIND_GATEWAYS_SIZE);
       findGatewayCommand.fill(0, 0x00, FIND_GATEWAYS_SIZE);
       findGatewayCommand.writeInt16BE(FIND_GATEWAYS, 0x00);
       findGatewayCommand.writeInt16BE(FIND_GATEWAYS_SIZE, 0x08);

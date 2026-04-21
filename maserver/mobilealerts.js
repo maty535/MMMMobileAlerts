@@ -16,8 +16,10 @@ nconf.defaults({
   // otherwise use specified IP address
   'localIPv4Address': null,
 
-  'mqtt': 'mqtt://127.0.0.1',
-  'mqtt_home': 'MobileAlerts/', // default MQTT path for the device parsed data
+  'mqtt': {
+      'uri:': 'mqtt://127.0.0.1',
+      'topic': 'MobileAlerts/', // default MQTT path for the device parsed data
+  },
 
   'logfile': './MobileAlerts.log',
   'logGatewayInfo': true,   // display info about all found gateways
@@ -42,8 +44,9 @@ if (nconf.get('localIPv4Address') == null) {
   localIPv4Adress = nconf.get('localIPv4Address');
 }
 
-console.log('### Local IP address for proxy: ' + localIPv4Adress);
 const proxyServerPort = nconf.get('proxyServerPort');
+console.log('### Local IP address for proxy: ' + localIPv4Adress + " ,port: " + proxyServerPort);
+
 
 // #############################################################
 
@@ -55,12 +58,14 @@ function round(value, decimals) {
 // Setup MQTT to allow us sending data to the broker
 
 const mqtt = require('mqtt');
-const mqttBroker = nconf.get('mqtt')
+
+const mqttBroker = nconf.get('mqtt:uri');
+console.log('### MQTT broker: '+ mqttBroker);
 var mqttClient;
 if(mqttBroker) {
-  mqttClient = mqtt.connect(nconf.get('mqtt'), {
-      'username': nconf.get('mqtt_username')
-    , 'password': nconf.get('mqtt_password') })
+  mqttClient = mqtt.connect(nconf.get('mqtt:uri'), {
+      'username': nconf.get('mqtt:uid')
+    , 'password': nconf.get('mqtt:pwd') })
   mqttClient.on('connect', function () {
     console.log('### MQTT server is connected');
   });
@@ -76,7 +81,7 @@ if(mqttBroker) {
 }
 
 function sendMQTTSensorOfflineStatus(sensor, isOffline) {
-  const mqttHome = nconf.get('mqtt_home');
+  const mqttHome = nconf.get('mqtt:topic');
   if(!mqttHome) {
     return;
   }
@@ -94,14 +99,14 @@ function sendMQTTSensorOfflineStatus(sensor, isOffline) {
 
 // send sensor info via MQTT
 function sendMQTT(sensor) {
-  const mqttHome = nconf.get('mqtt_home');
+  const mqttHome = nconf.get('mqtt:topic');
   if(!mqttHome) {
     return;
   }
 
   var json = sensor.json
   json.offline = false
-  const sensorName = nconf.get('sensors:'+sensor.ID)
+  const sensorName = nconf.get('sensors:' + sensor.ID)
   if(sensorName)
     console.log(sensorName, mqttHome+sensor.ID+'/json', JSON.stringify(json))
   else
@@ -165,7 +170,7 @@ try {
   for(sensorID in sensorList) {
     buf = sensorList[sensorID].buffer;
     if(buf) {
-      lastSensorMessages[sensorID] = sensors.CreateSensorObject(new Buffer(buf.data));
+      lastSensorMessages[sensorID] = sensors.CreateSensorObject(Buffer.from(buf.data));
       lastSensorMessages[sensorID].isOffline = sensorList[sensorID].isOffline
     }
   }

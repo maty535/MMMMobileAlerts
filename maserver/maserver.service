@@ -4,15 +4,14 @@ Documentation=https://github.com/sarnau/MMMMobileAlerts/tree/master/maserver
 After=network.target
 
 [Service]
-Type=simple
 
-# Update to the username owning the installation
-User=USERNAME
+User=root
+Group=root
 
-# update to the proper path
-WorkingDirectory=/PATH/TO/MMMMobileAlerts/maserver
-ExecStart=/usr/bin/node /PATH/TO/MMMMobileAlerts/maserver/mobilealerts.js
+WorkingDirectory=/home/maty/git/MMMMobileAlerts/maserver/
+ExecStart=/usr/bin/node /home/maty/git/MMMMobileAlerts/maserver/mobilealerts.js
 
+RestartSec=4
 Restart=on-failure
 StandardOutput=syslog
 StandardError=syslog
